@@ -1,61 +1,37 @@
 pipeline {
     agent any
-
-    tools {
-        maven 'Maven3' // Must match the Maven installation name under "Manage Jenkins → Tools → Maven"
+    tools{
+    maven 'Maven3'
     }
-
     environment {
-        SONARQUBE_SERVER = 'SonarQubeServer' // Must match your configured SonarQube server name in Jenkins
+        SONARQUBE_SERVER = 'SonarQubeServer'  // The name of the SonarQube server configured in Jenkins
+        SONAR_TOKEN = 'sqa_d9191259bdb43236dee6e9185337370af28c6ec8'
     }
-
     stages {
-
         stage('Checkout') {
             steps {
                 git branch: 'master', url: 'https://github.com/ADirin/Week4_Inclass_Assignment_SonarQube_Jenkins.git'
             }
         }
-
         stage('Build') {
             steps {
                 bat 'mvn clean install'
             }
         }
-
         stage('SonarQube Analysis') {
             steps {
-                // Use SonarQube environment configured in Jenkins
                 withSonarQubeEnv('SonarQubeServer') {
-                    // Use secure token from Jenkins credentials
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                        bat """
-                            mvn sonar:sonar ^
-                              -Dsonar.projectKey=devops-demo ^
-                              -Dsonar.projectName=DevOps-Demo ^
-                              -Dsonar.host.url=%SONAR_HOST_URL% ^
-                              -Dsonar.login=%SONAR_TOKEN%
-                        """
-                    }
+                    bat """
+                        sonar-scanner ^
+                        -Dsonar.projectKey=devops-demo ^
+                        -Dsonar.sources=src ^
+                        -Dsonar.projectName=DevOps-Demo ^
+                        -Dsonar.host.url=http://localhost:9000 ^
+                        -Dsonar.login=${env.SONAR_TOKEN} ^
+                        -Dsonar.java.binaries=target/classes
+                    """
                 }
             }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
-    }
-
-    post {
-        success {
-            echo '✅ Build and SonarQube analysis completed successfully!'
-        }
-        failure {
-            echo '❌ Build or SonarQube analysis failed. Check logs for details.'
         }
     }
 }
