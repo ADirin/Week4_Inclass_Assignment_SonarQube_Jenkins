@@ -1,10 +1,11 @@
 pipeline {
     agent any
-    tools{
-    maven 'Maven3'
+    tools {
+        maven 'Maven3'
+        sonarScanner 'SonarScanner'  // Must match the name in Jenkins tool config
     }
     environment {
-        SONARQUBE_SERVER = 'SonarQubeServer'  // The name of the SonarQube server configured in Jenkins
+        SONARQUBE_SERVER = 'SonarQubeServer'
         SONAR_TOKEN = 'sqa_d9191259bdb43236dee6e9185337370af28c6ec8'
     }
     stages {
@@ -22,7 +23,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQubeServer') {
                     bat """
-                        sonar-scanner ^
+                        ${tool 'SonarScanner'}\\bin\\sonar-scanner ^
                         -Dsonar.projectKey=devops-demo ^
                         -Dsonar.sources=src ^
                         -Dsonar.projectName=DevOps-Demo ^
